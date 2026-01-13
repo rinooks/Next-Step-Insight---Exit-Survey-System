@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import Welcome from './components/Welcome';
 import SurveyForm from './components/SurveyForm';
 import Results from './components/Results';
+import Login from './components/Login';
 import { SurveyData, Step } from './types';
 
 const INITIAL_DATA: SurveyData = {
@@ -25,6 +26,7 @@ const INITIAL_DATA: SurveyData = {
 };
 
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [step, setStep] = useState<Step>(Step.WELCOME);
   const [surveyData, setSurveyData] = useState<SurveyData>(INITIAL_DATA);
 
@@ -51,20 +53,26 @@ const App: React.FC = () => {
 
   return (
     <Layout>
-      {step === Step.WELCOME && <Welcome onStart={() => setStep(Step.BASIC_INFO)} />}
-      
-      {step !== Step.WELCOME && step !== Step.ANALYSIS && (
-        <SurveyForm
-          data={surveyData}
-          updateData={updateData}
-          onNext={handleNext}
-          onBack={handleBack}
-          step={step}
-        />
-      )}
+      {!isAuthenticated ? (
+        <Login onLogin={() => setIsAuthenticated(true)} />
+      ) : (
+        <>
+          {step === Step.WELCOME && <Welcome onStart={() => setStep(Step.BASIC_INFO)} />}
+          
+          {step !== Step.WELCOME && step !== Step.ANALYSIS && (
+            <SurveyForm
+              data={surveyData}
+              updateData={updateData}
+              onNext={handleNext}
+              onBack={handleBack}
+              step={step}
+            />
+          )}
 
-      {step === Step.ANALYSIS && (
-        <Results data={surveyData} onRestart={handleRestart} />
+          {step === Step.ANALYSIS && (
+            <Results data={surveyData} onRestart={handleRestart} />
+          )}
+        </>
       )}
     </Layout>
   );

@@ -27,7 +27,7 @@ const Results: React.FC<ResultsProps> = ({ data, onRestart }) => {
 
   const satData = Object.entries(data.satisfaction).map(([key, value]) => ({
     name: key,
-    value: value,
+    value: value as number,
   }));
 
   // NPS Calculation helpers

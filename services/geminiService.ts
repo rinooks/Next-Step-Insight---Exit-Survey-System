@@ -1,23 +1,42 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SurveyData, AnalysisResult } from "../types";
 
-// API Key 안전하게 가져오기 (Vite 환경 및 Node 환경 호환)
+// API Key 안전하게 가져오기 (배포 환경 호환성 강화)
 const getApiKey = () => {
+  let key = '';
+
   // 1. Vite 환경 (import.meta.env)
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_KEY) {
-    return import.meta.env.VITE_API_KEY;
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_KEY) {
+    key = (import.meta as any).env.VITE_API_KEY;
   }
-  // 2. process.env가 정의되어 있는 경우 (Next.js, CRA 등)
-  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-    return process.env.API_KEY;
+  // 2. Node/Vercel 환경 (process.env)
+  else if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    key = process.env.API_KEY;
   }
-  return '';
+  
+  // 3. (옵션) 환경 변수 설정이 어려운 경우, 아래 따옴표 안에 API 키를 직접 입력해서 배포하세요.
+  // 주의: 깃허브에 올릴 때는 키가 노출되므로 private 리포지토리를 사용하거나 환경변수를 권장합니다.
+  const HARDCODED_KEY = ""; 
+  
+  return key || HARDCODED_KEY;
 };
 
-// Gemini API 클라이언트 초기화
-const ai = new GoogleGenAI({ apiKey: getApiKey() });
+const apiKey = getApiKey();
+
+// API 키가 없을 경우의 안전 장치 (앱이 멈추지 않도록 처리)
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 export const analyzeExitSurvey = async (data: SurveyData): Promise<AnalysisResult> => {
+  if (!ai) {
+    return {
+      summary: "API 키가 설정되지 않았습니다.",
+      sentiment: "설정 오류",
+      rootCause: "Vercel 환경 변수(VITE_API_KEY 또는 API_KEY)를 확인해주세요.",
+      detailedDiagnosis: "현재 AI 서비스를 사용할 수 없는 상태입니다. 개발자 도구(F12)를 확인하거나 배포 설정을 점검해주세요.",
+      strategies: ["환경 변수 설정 확인", "API 키 유효성 확인", "네트워크 상태 확인"]
+    };
+  }
+
   try {
     const prompt = `
       당신은 '레퍼런스HRD'의 수석 HR 컨설턴트이자 조직문화 전문가입니다. 
@@ -68,7 +87,6 @@ export const analyzeExitSurvey = async (data: SurveyData): Promise<AnalysisResul
 
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
-    // 에러 발생 시 폴백 데이터 반환
     return {
       summary: "데이터 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
       sentiment: "분석 불가",
