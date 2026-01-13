@@ -1,8 +1,21 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SurveyData, AnalysisResult } from "../types";
 
-// Gemini API 클라이언트 초기화 (API Key는 환경변수에서 가져옴)
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// API Key 안전하게 가져오기 (Vite 환경 및 Node 환경 호환)
+const getApiKey = () => {
+  // 1. Vite 환경 (import.meta.env)
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_KEY) {
+    return import.meta.env.VITE_API_KEY;
+  }
+  // 2. process.env가 정의되어 있는 경우 (Next.js, CRA 등)
+  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    return process.env.API_KEY;
+  }
+  return '';
+};
+
+// Gemini API 클라이언트 초기화
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 export const analyzeExitSurvey = async (data: SurveyData): Promise<AnalysisResult> => {
   try {
